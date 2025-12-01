@@ -2,6 +2,7 @@ pipeline {
   agent any
 
   environment {
+    // Standard variables for the production environment
     AWS_REGION          = 'us-west-2'
     TF_VAR_environment  = 'prod'
     TF_VAR_region       = "${AWS_REGION}"
@@ -16,41 +17,41 @@ pipeline {
       }
     }
 
-    stage('Terraform Init') {
-      steps {
+    stage('Terraform Operations') {
+      // --- SECURE CREDENTIAL INJECTION ---
+      // 'AWS_PROD_CREDS' must be the ID of your configured AWS credential in Jenkins
+      withCredentials([aws(credentialsId: 'AWS_PROD_CREDS', accesskeyVariable: 'AWS_ACCESS_KEY_ID', secretkeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+        
         dir('environments/prod') {
-          // REMOVED -backend-config FLAGS: Configuration is read from backend.tf
-          sh 'terraform init' 
-        }
-      }
-    }
 
-    stage('Format & Validate') {
-      steps {
-        dir('environments/prod') {
-          sh 'terraform fmt -check -recursive'
-          sh 'terraform validate'
-        }
-      }
-    }
+          stage('Init') {
+            steps {
+              sh 'terraform init' 
+            }
+          }
 
-    stage('Terraform Plan') {
-      steps {
-        dir('environments/prod') {
-          // Using the correct variable file path
-          sh "terraform plan -var-file=${TFVARS_FILE}" 
-        }
-      }
-    }
+          stage('Format & Validate') {
+            steps {
+              sh 'terraform fmt -check -recursive'
+              sh 'terraform validate'
+            }
+          }
 
-    stage('Terraform Apply') {
-      when {
-        branch 'main'
-      }
-      steps {
-        dir('environments/prod') {
-          input message: 'Approve production deployment?'
-          sh "terraform apply -auto-approve -var-file=${TFVARS_FILE}"
+          stage('Plan') {
+            steps {
+              sh "terraform plan -var-file=${TFVARS_FILE}" 
+            }
+          }
+
+          stage('Apply') {
+            when {
+              branch 'main'
+            }
+            steps {
+              input message: 'Approve production deployment?'
+              sh "terraform apply -auto-approve -var-file=${TFVARS_FILE}"
+            }
+          }
         }
       }
     }
@@ -58,7 +59,6 @@ pipeline {
 
   post {
     always {
-      // Clean up the local provider cache regardless of success/failure
       echo 'Cleaning up local .terraform directory...'
       sh 'rm -rf environments/prod/.terraform' 
     }
