@@ -27,7 +27,6 @@ pipeline {
             script {
               // Initialize backend
               sh 'terraform init -input=false -reconfigure'
-'
 
               // Select or create workspace
               sh 'terraform workspace select prod || terraform workspace new prod'
@@ -67,7 +66,6 @@ pipeline {
 
     failure {
       echo '❌ Terraform apply failed.'
-      // Uncomment and configure SMTP to enable email alerts
       // mail to: 'devops@yourdomain.com',
       //      subject: "Terraform Pipeline Failed: ${env.JOB_NAME} [${env.BUILD_NUMBER}]",
       //      body: "Check Jenkins for details: ${env.BUILD_URL}"
