@@ -26,7 +26,8 @@ pipeline {
           dir('environments/prod') {
             script {
               // Initialize backend
-              sh 'terraform init -input=false'
+              sh 'sh 'terraform init -input=false -reconfigure'
+'
 
               // Select or create workspace
               sh 'terraform workspace select prod || terraform workspace new prod'
