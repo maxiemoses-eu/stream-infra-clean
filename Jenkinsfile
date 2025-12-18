@@ -19,8 +19,8 @@ pipeline {
     stage('Terraform Operations') {
       environment {
         // Inject AWS credentials securely
-        AWS_ACCESS_KEY_ID     = credentials('AWS_PROD_CREDS')
-        AWS_SECRET_ACCESS_KEY = credentials('AWS_PROD_CREDS')
+        AWS_ACCESS_KEY_ID     = credentials('AWS_INFRA_CREDS')
+        AWS_SECRET_ACCESS_KEY = credentials('AWS_INFRA_CREDS')
       }
 
       steps {
