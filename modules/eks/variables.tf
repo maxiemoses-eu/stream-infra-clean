@@ -49,3 +49,15 @@ variable "ssh_key_name" {
   type        = string
   default     = null
 }
+
+# --- NEW VARIABLES ADDED BELOW ---
+
+variable "env" {
+  description = "The environment name (e.g., prod) used for tagging StreamlinePay resources."
+  type        = string
+}
+
+variable "private_subnet_ids" {
+  description = "The list of private subnet IDs where EKS worker nodes will be deployed."
+  type        = list(string)
+}

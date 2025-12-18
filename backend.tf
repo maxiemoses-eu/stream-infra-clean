@@ -1,4 +1,4 @@
-terraform {
+/* terraform {
   backend "s3" {
     bucket         = "streamlinepay-terraform-state"
     key            = "terraform.tfstate"
@@ -7,3 +7,4 @@ terraform {
     encrypt        = true
   }
 }
+*/
