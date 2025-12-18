@@ -1,31 +1,51 @@
-variable "env" {
-  type = string
-}
-
-variable "private_subnet_ids" {
-  type = list(string)
-}
-
 variable "cluster_role_arn" {
-  type = string
+  description = "The IAM Role ARN for the EKS control plane service."
+  type        = string
 }
 
 variable "node_role_arn" {
-  type = string
+  description = "The IAM Role ARN that the EKS worker nodes will assume."
+  type        = string
 }
 
 variable "node_desired_size" {
-  type = number
+  description = "The desired number of worker nodes to launch initially."
+  type        = number
+  default     = 2
 }
 
 variable "node_min_size" {
-  type = number
+  description = "The minimum number of worker nodes for the Auto Scaling Group."
+  type        = number
+  default     = 1
 }
 
 variable "node_max_size" {
-  type = number
+  description = "The maximum number of worker nodes for the Auto Scaling Group."
+  type        = number
+  default     = 5
 }
 
 variable "instance_types" {
-  type = list(string)
+  description = "A list of EC2 instance types to use for the worker nodes (e.g., ['t3.medium'])."
+  type        = list(string)
+  default     = ["t3.small"]
+}
+
+variable "kube_version" {
+  description = "The Kubernetes version to use for the EKS cluster (e.g., '1.28')."
+  type        = string
+  default     = "1.28"
+}
+
+variable "allowed_external_cidrs" {
+  description = "CIDR blocks allowed to access the public EKS API endpoint (e.g., your office/VPN IPs)."
+  type        = list(string)
+  default     = ["0.0.0.0/0"] 
+}
+
+variable "ssh_key_name" {
+  description = "The EC2 Key Pair name for SSH access to worker nodes (REQUIRED for remote_access)."
+  type        = string
+  default     = null
 }

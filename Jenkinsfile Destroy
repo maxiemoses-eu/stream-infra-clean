@@ -1,0 +1,64 @@
+pipeline {
+  agent any
+
+  parameters {
+    choice(name: 'ENV', choices: ['dev', 'staging', 'prod'], description: 'Select the environment to destroy')
+  }
+
+  environment {
+    AWS_REGION         = 'us-west-2'
+    TF_VAR_environment = "${params.ENV}"
+    TFVARS_FILE        = "${params.ENV}.tfvars"
+  }
+
+  stages {
+    stage('Confirm Destroy') {
+      steps {
+        script {
+          input message: "⚠️ Are you absolutely sure you want to destroy the *${params.ENV}* infrastructure?"
+        }
+      }
+    }
+
+    stage('Terraform Destroy') {
+      environment {
+        // Use a single credential ID if all environments share it
+        AWS_ACCESS_KEY_ID     = credentials('AWS_INFRA_CREDS')
+        AWS_SECRET_ACCESS_KEY = credentials('AWS_INFRA_CREDS')
+      }
+
+      steps {
+        dir("environments/${params.ENV}") {
+          script {
+            // Optional: use workspace if you're managing state that way
+            sh "terraform workspace select ${params.ENV} || terraform workspace new ${params.ENV}"
+
+            // Initialize Terraform
+            sh 'terraform init -input=false'
+
+            // Destroy infrastructure
+            sh "terraform destroy -auto-approve -var-file=${TFVARS_FILE}"
+          }
+        }
+      }
+    }
+  }
+
+  post {
+    always {
+      echo "🧹 Cleaning up Terraform artifacts for ${params.ENV}..."
+      sh "rm -rf environments/${params.ENV}/.terraform"
+    }
+
+    success {
+      echo "✅ Terraform destroy succeeded for ${params.ENV}."
+    }
+
+    failure {
+      echo "❌ Terraform destroy failed for ${params.ENV}."
+      mail to: 'devops@yourdomain.com',
+           subject: "Terraform Destroy Failed: ${params.ENV} - ${env.JOB_NAME} [${env.BUILD_NUMBER}]",
+           body: "Check Jenkins for details: ${env.BUILD_URL}"
+    }
+  }
+}

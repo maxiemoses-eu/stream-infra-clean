@@ -2,12 +2,11 @@ pipeline {
   agent any
 
   environment {
-    // Standard variables for the production environment
+    // Environment-specific variables
     AWS_REGION          = 'us-west-2'
     TF_VAR_environment  = 'prod'
     TF_VAR_region       = "${AWS_REGION}"
-    // Set to the actual variable file name inside the prod directory
-    TFVARS_FILE         = 'prod.tfvars' 
+    TFVARS_FILE         = 'prod.tfvars'
   }
 
   stages {
@@ -18,38 +17,35 @@ pipeline {
     }
 
     stage('Terraform Operations') {
-      // --- SECURE CREDENTIAL INJECTION ---
-      // 'AWS_PROD_CREDS' must be the ID of your configured AWS credential in Jenkins
-      withCredentials([aws(credentialsId: 'AWS_PROD_CREDS', accesskeyVariable: 'AWS_ACCESS_KEY_ID', secretkeyVariable: 'AWS_SECRET_ACCESS_KEY')]) {
-        
+      environment {
+        // Inject AWS credentials securely
+        AWS_ACCESS_KEY_ID     = credentials('AWS_PROD_CREDS')
+        AWS_SECRET_ACCESS_KEY = credentials('AWS_PROD_CREDS')
+      }
+
+      steps {
         dir('environments/prod') {
+          script {
+            // Select or create workspace
+            sh 'terraform workspace select prod || terraform workspace new prod'
 
-          stage('Init') {
-            steps {
-              sh 'terraform init' 
-            }
-          }
+            // Terraform Init
+            sh 'terraform init -input=false'
 
-          stage('Format & Validate') {
-            steps {
-              sh 'terraform fmt -check -recursive'
-              sh 'terraform validate'
-            }
-          }
+            // Format & Validate
+            sh 'terraform fmt -check -recursive'
+            sh 'terraform validate'
 
-          stage('Plan') {
-            steps {
-              sh "terraform plan -var-file=${TFVARS_FILE}" 
-            }
-          }
+            // Plan with output file
+            sh "terraform plan -var-file=${TFVARS_FILE} -out=tfplan"
 
-          stage('Apply') {
-            when {
-              branch 'main'
-            }
-            steps {
+            // Archive plan file for auditing
+            archiveArtifacts artifacts: 'tfplan', fingerprint: true
+
+            // Manual approval before apply
+            if (env.BRANCH_NAME == 'main') {
               input message: 'Approve production deployment?'
-              sh "terraform apply -auto-approve -var-file=${TFVARS_FILE}"
+              sh 'terraform apply -auto-approve tfplan'
             }
           }
         }
@@ -59,13 +55,23 @@ pipeline {
 
   post {
     always {
-      echo 'Cleaning up local .terraform directory...'
-      sh 'rm -rf environments/prod/.terraform' 
+      echo 'Cleaning up Terraform artifacts...'
+      sh 'rm -rf environments/prod/.terraform environments/prod/tfplan'
     }
+
+    success {
+      echo '✅ Terraform apply completed successfully.'
+      // Optional: Slack or other notification
+      // slackSend channel: '#infra-alerts', message: "✅ Terraform apply succeeded for ${env.JOB_NAME} [${env.BUILD_NUMBER}]"
+    }
+
     failure {
+      echo '❌ Terraform apply failed.'
       mail to: 'devops@yourdomain.com',
            subject: "Terraform Pipeline Failed: ${env.JOB_NAME} [${env.BUILD_NUMBER}]",
            body: "Check Jenkins for details: ${env.BUILD_URL}"
+      // Optional: Slack alert
+      // slackSend channel: '#infra-alerts', message: "❌ Terraform apply failed for ${env.JOB_NAME} [${env.BUILD_NUMBER}]"
     }
   }
 }
