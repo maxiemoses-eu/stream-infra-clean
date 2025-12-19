@@ -41,7 +41,7 @@ variable "kube_version" {
 variable "allowed_external_cidrs" {
   description = "CIDR blocks allowed to access the public EKS API endpoint (e.g., your office/VPN IPs)."
   type        = list(string)
-  default     = ["0.0.0.0/0"] 
+  default     = ["0.0.0.0/0"]
 }
 
 variable "ssh_key_name" {

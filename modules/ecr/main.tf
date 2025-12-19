@@ -2,7 +2,7 @@ resource "aws_ecr_repository" "repos" {
   for_each = toset(var.repos)
 
   name                 = "streamlinepay-${var.env}-${each.key}" # New naming convention
-  image_tag_mutability = "IMMUTABLE"                           # Production best practice
+  image_tag_mutability = "IMMUTABLE"                            # Production best practice
   force_delete         = true
 
   encryption_configuration {
@@ -10,7 +10,7 @@ resource "aws_ecr_repository" "repos" {
   }
 
   image_scanning_configuration {
-    scan_on_push = true                                        # Enable vulnerability scanning
+    scan_on_push = true # Enable vulnerability scanning
   }
 
   tags = {

@@ -1,19 +1,19 @@
 resource "aws_eks_cluster" "main" {
   name     = "${var.env}-eks-cluster"
   role_arn = var.cluster_role_arn
-  version  = var.kube_version 
+  version  = var.kube_version
 
   # CRITICAL OBSERVABILITY FIX: Enable all control plane logs to CloudWatch
-  enabled_cluster_log_types = ["api", "audit", "authenticator", "controllerManager", "scheduler"] 
+  enabled_cluster_log_types = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
 
   vpc_config {
     # FIX: Use the variable passed from the root main.tf
-    subnet_ids             = var.private_subnet_ids 
-    
+    subnet_ids = var.private_subnet_ids
+
     # CRITICAL SECURITY FIX: Restrict public access to the API server
-    endpoint_private_access = true 
+    endpoint_private_access = true
     endpoint_public_access  = true
-    public_access_cidrs     = var.allowed_external_cidrs 
+    public_access_cidrs     = var.allowed_external_cidrs
   }
 
   tags = {
@@ -25,9 +25,9 @@ resource "aws_eks_node_group" "default" {
   cluster_name    = aws_eks_cluster.main.name
   node_group_name = "${var.env}-node-group"
   node_role_arn   = var.node_role_arn
-  
+
   # FIX: Use the variable passed from the root main.tf
-  subnet_ids      = var.private_subnet_ids 
+  subnet_ids = var.private_subnet_ids
 
   scaling_config {
     desired_size = var.node_desired_size
