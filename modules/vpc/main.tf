@@ -43,7 +43,7 @@ resource "aws_internet_gateway" "igw" {
   }
 }
 
-# FIXED: Create NAT Gateways based on the number of EIPs provided
+# CRITICAL HA FIX: Create NAT Gateways based on the number of EIPs provided
 resource "aws_nat_gateway" "nat" {
   count         = length(var.eip_ids)
   allocation_id = var.eip_ids[count.index]
@@ -71,7 +71,7 @@ resource "aws_route_table" "public" {
   }
 }
 
-# FIXED: Use element() to prevent "Invalid Index" error if NAT count < Private Subnet count
+# CRITICAL HA FIX: Use element() to prevent "Invalid Index" error
 resource "aws_route_table" "private" {
   count  = length(var.private_subnet_cidrs)
   vpc_id = aws_vpc.main.id
@@ -95,4 +95,6 @@ resource "aws_route_table_association" "public" {
 
 resource "aws_route_table_association" "private" {
   count          = length(aws_subnet.private)
-  subnet_id
+  subnet_id      = aws_subnet.private[count.index].id
+  route_table_id = aws_route_table.private[count.index].id
+}
