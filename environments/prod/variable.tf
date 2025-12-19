@@ -28,9 +28,10 @@ variable "azs" {
   default = ["us-west-2a", "us-west-2b"]
 }
 
-variable "eip_id" {
-  type        = string
-  description = "Elastic IP ID for NAT Gateway"
+# FIXED: Changed from eip_id (string) to eip_ids (list of strings)
+variable "eip_ids" {
+  type        = list(string)
+  description = "List of Elastic IP IDs for NAT Gateway(s)"
 }
 
 variable "ecr_repos" {
