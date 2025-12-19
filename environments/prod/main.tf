@@ -13,4 +13,8 @@ module "production_infrastructure" {
   node_max_size        = var.node_max_size
   instance_types       = var.instance_types
   ecr_repos            = var.ecr_repos
+  
+  # FIX: Add these two lines to satisfy the root module requirements
+  bucket_name          = var.bucket_name
+  lock_table_name      = var.lock_table_name
 }
