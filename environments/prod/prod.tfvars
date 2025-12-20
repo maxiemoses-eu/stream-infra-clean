@@ -8,7 +8,7 @@ public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24"]
 private_subnet_cidrs = ["10.0.3.0/24", "10.0.4.0/24"]
 azs                  = ["us-west-2a", "us-west-2b"]
 
-# FIXED: Changed from eip_id to eip_ids and wrapped in brackets []
+# FIXED: Plural list for NAT Gateway
 eip_ids              = ["eipalloc-0fbc73e9be8ebb30b"] 
 
 # 🐳 ECR Repositories
@@ -20,6 +20,8 @@ ecr_repos = [
 ]
 
 # ☸️ EKS Cluster
+# UPDATED TO 1.31 TO FIX THE NODE GROUP AMI ERROR
+eks_version       = "1.31"
 node_desired_size = 2
 node_max_size     = 3
 node_min_size     = 1

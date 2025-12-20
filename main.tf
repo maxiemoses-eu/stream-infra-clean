@@ -5,8 +5,6 @@ module "vpc" {
   public_subnet_cidrs  = var.public_subnet_cidrs
   private_subnet_cidrs = var.private_subnet_cidrs
   azs                  = var.azs
-
-  # UPDATED: Use the plural list variable
   eip_ids              = var.eip_ids
 }
 
@@ -18,7 +16,10 @@ module "iam" {
 module "eks" {
   source = "./modules/eks"
   env    = var.env
-  # Pass the VPC ID and Subnets from the VPC module output
+  
+  # NEW: Add this line to pass the version to the EKS module
+  version            = var.eks_version 
+  
   vpc_id             = module.vpc.vpc_id
   private_subnet_ids = module.vpc.private_subnet_ids
   cluster_role_arn   = module.iam.eks_cluster_role_arn
@@ -35,9 +36,15 @@ module "ecr" {
   repos  = var.ecr_repos
 }
 
+# CRITICAL: Comment out this module now.
+# You have already created the bucket/table, and Terraform is 
+# currently using them for the backend. Trying to manage them 
+# as resources inside the state causes the 409 Conflict error.
+/*
 module "s3_backend" {
   source          = "./modules/s3_backend"
   env             = var.env
   bucket_name     = var.bucket_name
   lock_table_name = var.lock_table_name
 }
+*/

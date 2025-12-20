@@ -12,7 +12,8 @@ terraform {
     bucket         = "streamlinepay-terraform-state"
     key            = "prod/terraform.tfstate"
     region         = "us-west-2"
-    dynamodb_table = "streamlinepay-prod-locks"
+    # UPDATED: Matches the existing table from your error log
+    dynamodb_table = "streamlinepay-terraform-locks" 
     encrypt        = true
   }
 }

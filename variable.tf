@@ -23,7 +23,6 @@ variable "azs" {
   type    = list(string)
 }
 
-# THE CRITICAL PLURAL FIX
 variable "eip_ids" {
   type        = list(string)
   description = "List of Elastic IP IDs for NAT Gateway"
@@ -31,6 +30,11 @@ variable "eip_ids" {
 
 variable "ecr_repos" {
   type    = list(string)
+}
+
+variable "eks_version" {
+  type    = string
+  default = "1.31"
 }
 
 variable "node_desired_size" {
