@@ -32,9 +32,11 @@ variable "ecr_repos" {
   type    = list(string)
 }
 
+# CONSOLIDATED: Only one block for eks_version
 variable "eks_version" {
-  type    = string
-  default = "1.31"
+  type        = string
+  default     = "1.31"
+  description = "The version of EKS to deploy (e.g., 1.31)"
 }
 
 variable "node_desired_size" {
