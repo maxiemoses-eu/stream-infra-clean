@@ -1,7 +1,9 @@
 resource "aws_eks_cluster" "main" {
   name     = "${var.env}-eks-cluster"
   role_arn = var.cluster_role_arn
-  version  = var.kube_version
+  
+  # UPDATED: Use cluster_version to match your variables file
+  version  = var.cluster_version
 
   # CRITICAL OBSERVABILITY FIX: Enable all control plane logs to CloudWatch
   enabled_cluster_log_types = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
@@ -25,6 +27,9 @@ resource "aws_eks_node_group" "default" {
   cluster_name    = aws_eks_cluster.main.name
   node_group_name = "${var.env}-node-group"
   node_role_arn   = var.node_role_arn
+
+  # UPDATED: Sync node version with cluster version
+  version         = var.cluster_version
 
   # FIX: Use the variable passed from the root main.tf
   subnet_ids = var.private_subnet_ids

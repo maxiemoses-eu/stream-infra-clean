@@ -17,8 +17,9 @@ module "eks" {
   source = "./modules/eks"
   env    = var.env
   
-  # NEW: Add this line to pass the version to the EKS module
-  version            = var.eks_version 
+  # FIXED: Renamed to 'cluster_version' to avoid Terraform keyword conflict
+  # This maps to the 'cluster_version' variable in your EKS module
+  cluster_version    = var.eks_version 
   
   vpc_id             = module.vpc.vpc_id
   private_subnet_ids = module.vpc.private_subnet_ids
@@ -36,10 +37,7 @@ module "ecr" {
   repos  = var.ecr_repos
 }
 
-# CRITICAL: Comment out this module now.
-# You have already created the bucket/table, and Terraform is 
-# currently using them for the backend. Trying to manage them 
-# as resources inside the state causes the 409 Conflict error.
+# DISABLED: Prevent Terraform from trying to recreate the backend bucket it is using
 /*
 module "s3_backend" {
   source          = "./modules/s3_backend"
