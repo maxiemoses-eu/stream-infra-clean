@@ -38,10 +38,10 @@ variable "ecr_repos" {
   type = list(string)
   default = [
     "store-ui",
-    "cart-cna-microservice",
-    "products-cna-microservice",
-    "users-cna-microservice",
-    "search-cna-microservice"
+    "cart-microservice",
+    "products-microservice",
+    "users-microservice",
+    "search-microservice"
   ]
 }
 
