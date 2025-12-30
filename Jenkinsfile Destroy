@@ -1,43 +1,58 @@
 pipeline {
   agent any
 
-  parameters {
-    choice(name: 'ENV', choices: ['dev', 'staging', 'prod'], description: 'Select the environment to destroy')
-  }
-
   environment {
     AWS_REGION         = 'us-west-2'
-    TF_VAR_environment = "${params.ENV}"
-    TFVARS_FILE        = "${params.ENV}.tfvars"
+    TF_VAR_environment = 'prod'
+    TF_VAR_region      = "${AWS_REGION}"
+    TFVARS_FILE        = 'prod.tfvars'
   }
 
   stages {
-    stage('Confirm Destroy') {
+    stage('Checkout') {
       steps {
-        script {
-          input message: "⚠️ Are you absolutely sure you want to destroy the *${params.ENV}* infrastructure?"
+        checkout scm
+      }
+    }
+
+    stage('Plan Destruction') {
+      steps {
+        withCredentials([[
+          $class: 'AmazonWebServicesCredentialsBinding',
+          credentialsId: 'AWS_INFRA_CREDS',
+          accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+          secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+        ]]) {
+          dir('environments/prod') {
+            script {
+              sh 'terraform init -input=false -reconfigure'
+              sh 'terraform workspace select prod'
+              // Generate a plan specifically for destruction
+              sh "terraform plan -destroy -var-file=${TFVARS_FILE} -out=destroy.tfplan"
+            }
+          }
         }
       }
     }
 
-    stage('Terraform Destroy') {
-      environment {
-        // Use a single credential ID if all environments share it
-        AWS_ACCESS_KEY_ID     = credentials('AWS_INFRA_CREDS')
-        AWS_SECRET_ACCESS_KEY = credentials('AWS_INFRA_CREDS')
-      }
-
+    stage('Manual Approval') {
       steps {
-        dir("environments/${params.ENV}") {
-          script {
-            // Optional: use workspace if you're managing state that way
-            sh "terraform workspace select ${params.ENV} || terraform workspace new ${params.ENV}"
+        input message: "⚠️ WARNING: Are you sure you want to DESTROY StreamlinePay Prod Infra?", 
+              ok: "Yes, Terminate Everything"
+      }
+    }
 
-            // Initialize Terraform
-            sh 'terraform init -input=false'
-
-            // Destroy infrastructure
-            sh "terraform destroy -auto-approve -var-file=${TFVARS_FILE}"
+    stage('Terraform Destroy') {
+      steps {
+        withCredentials([[
+          $class: 'AmazonWebServicesCredentialsBinding',
+          credentialsId: 'AWS_INFRA_CREDS',
+          accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+          secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+        ]]) {
+          dir('environments/prod') {
+            // Apply the destruction plan generated in the previous stage
+            sh 'terraform apply -auto-approve destroy.tfplan'
           }
         }
       }
@@ -46,19 +61,14 @@ pipeline {
 
   post {
     always {
-      echo "🧹 Cleaning up Terraform artifacts for ${params.ENV}..."
-      sh "rm -rf environments/${params.ENV}/.terraform"
+      echo '🧹 Cleaning up local plan files...'
+      sh 'rm -f environments/prod/destroy.tfplan'
     }
-
     success {
-      echo "✅ Terraform destroy succeeded for ${params.ENV}."
+      echo '🛑 StreamlinePay Infrastructure has been successfully decommissioned.'
     }
-
     failure {
-      echo "❌ Terraform destroy failed for ${params.ENV}."
-      mail to: 'devops@yourdomain.com',
-           subject: "Terraform Destroy Failed: ${params.ENV} - ${env.JOB_NAME} [${env.BUILD_NUMBER}]",
-           body: "Check Jenkins for details: ${env.BUILD_URL}"
+      echo '⚠️ Infrastructure destruction failed or was partially completed. Manual intervention required.'
     }
   }
 }
